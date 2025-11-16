@@ -137,7 +137,7 @@ export function SheetWorkspace({
           return (
             <div key={`${sheet.id}-${index}`} className="question-row">
               <Text weight="medium" size="3">
-                #{index + 1}
+                #{(sheet.startAt ?? 1) + index}
               </Text>
               <div className="choice-grid">
                 {Array.from({ length: sheet.choiceCount }, (_, choiceIndex) => {

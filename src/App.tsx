@@ -43,6 +43,7 @@ const canCheckAnswers = selectedSheet ? selectedSheet.answers.every((answer) => 
       choiceCount: payload.choiceCount,
       answers: createBlankAnswers(payload.questionCount),
       updatedAt: Date.now(),
+      startAt: payload.startAt ?? 1,
     }
 
     setSheets((prev) => [newSheet, ...prev])

@@ -12,6 +12,7 @@ export type Sheet = {
   choiceCount: number
   answers: AnswerEntry[]
   updatedAt: number
+  startAt?: number
 }
 
 export type ResultSummary = {
@@ -25,4 +26,5 @@ export type SheetPayload = {
   name: string
   questionCount: number
   choiceCount: number
+  startAt?: number
 }

@@ -7,7 +7,7 @@ type SheetCreatorProps = {
   onCreate: (payload: SheetPayload) => void
 }
 
-const DEFAULT_FORM = { name: '', questions: '10', choices: '4' }
+const DEFAULT_FORM = { name: '', questions: '10', choices: '4', startAt: '' }
 
 export function SheetCreator({ onCreate }: SheetCreatorProps) {
   const [formState, setFormState] = useState(DEFAULT_FORM)
@@ -34,8 +34,14 @@ export function SheetCreator({ onCreate }: SheetCreatorProps) {
       return
     }
 
-    onCreate({ name: trimmedName, questionCount, choiceCount })
-    setFormState((prev) => ({ ...prev, name: '' }))
+    const startAt = formState.startAt.trim() === '' ? 1 : Number(formState.startAt)
+    if (!Number.isFinite(startAt)) {
+      setErrorMessage('Starting question number must be a valid number.')
+      return
+    }
+
+    onCreate({ name: trimmedName, questionCount, choiceCount, startAt })
+    setFormState(DEFAULT_FORM)
     setErrorMessage(null)
   }
 
@@ -89,6 +95,18 @@ export function SheetCreator({ onCreate }: SheetCreatorProps) {
               min="1"
               value={formState.choices}
               onChange={handleFieldChange('choices')}
+            />
+          </label>
+          <label className="input-stack">
+            <Text size="3" weight="medium">
+              Start question #
+            </Text>
+            <TextField.Root
+              type="number"
+              min="1"
+              placeholder="1"
+              value={formState.startAt}
+              onChange={handleFieldChange('startAt')}
             />
           </label>
         </Flex>
