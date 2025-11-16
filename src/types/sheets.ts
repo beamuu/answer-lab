@@ -1,4 +1,4 @@
-export type SheetMode = 'answer' | 'key'
+export type SheetMode = 'answer' | 'key' | 'review'
 
 export type AnswerEntry = {
   ua: number | null

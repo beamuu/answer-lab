@@ -1,20 +1,20 @@
-import { Badge, Box, Button, Callout, Card, Flex, Heading, RadioCards, Separator, Text } from '@radix-ui/themes'
+import { Box, Button, Card, Flex, Heading, Separator, Switch, Text } from '@radix-ui/themes'
+import styled from 'styled-components'
+import { useMemo, useState } from 'react'
 import type { ResultSummary, Sheet, SheetMode } from '../types/sheets'
+import { ResultSummary as Summary } from './ResultSummary'
 
 type SheetWorkspaceProps = {
-  sheet: Sheet | null
-  mode: SheetMode
-  onModeChange: (mode: SheetMode) => void
-  onAnswerChange: (questionIndex: number, value: string) => void
-  onCheckAnswers: () => void
-  result: ResultSummary | null
-  errorMessage: string | null
-}
-
-const modeLabels: Record<SheetMode, string> = {
-  answer: 'Answer sheet',
-  key: 'Answer key',
-}
+  sheet: Sheet | null;
+  mode: SheetMode;
+  onModeChange: (mode: SheetMode) => void;
+  onAnswerChange: (questionIndex: number, value: string) => void;
+  onCheckAnswers: () => void;
+  result: ResultSummary | null;
+  errorMessage: string | null;
+  canCheckAnswers: boolean;
+  onResetReview: () => void;
+};
 
 export function SheetWorkspace({
   sheet,
@@ -24,128 +24,205 @@ export function SheetWorkspace({
   onCheckAnswers,
   result,
   errorMessage,
+  canCheckAnswers,
+  onResetReview,
 }: SheetWorkspaceProps) {
+  const defaultMultipliers = { correct: 1, incorrect: 0, noAnswer: 0 }
+  const [multipliers, setMultipliers] = useState({
+    correct: String(defaultMultipliers.correct),
+    incorrect: String(defaultMultipliers.incorrect),
+    noAnswer: String(defaultMultipliers.noAnswer),
+  })
+
+  const stats = useMemo(() => {
+    if (!result) return [];
+    return [
+      { label: 'Correct', key: 'correct' as const, value: result.correct },
+      { label: 'Incorrect', key: 'incorrect' as const, value: result.incorrect },
+      { label: 'No answer', key: 'noAnswer' as const, value: result.noAnswer },
+    ];
+  }, [result]);
+
+  const getMultiplierValue = (key: keyof typeof multipliers) => {
+    const trimmed = multipliers[key].trim()
+    if (trimmed === '') return defaultMultipliers[key]
+    const parsed = Number(trimmed)
+    return Number.isNaN(parsed) ? defaultMultipliers[key] : parsed
+  }
+
+  const resolvedMultipliers = {
+    correct: getMultiplierValue('correct'),
+    incorrect: getMultiplierValue('incorrect'),
+    noAnswer: getMultiplierValue('noAnswer'),
+  }
+
+  const totalScore = result
+    ? result.correct * resolvedMultipliers.correct +
+      result.incorrect * resolvedMultipliers.incorrect +
+      result.noAnswer * resolvedMultipliers.noAnswer
+    : 0
+
+  const handleMultiplierChange = (key: keyof typeof multipliers, nextValue: string) => {
+    setMultipliers((prev) => ({ ...prev, [key]: nextValue }))
+  }
+
   if (!sheet) {
     return (
-      <Flex direction="column" align="center" justify="center" gap="3" className="empty-state">
-        <Heading size="5">No answersheet selected</Heading>
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        gap="2"
+        className="empty-state"
+      >
+        <Heading size="4">No answersheet selected</Heading>
         <Text color="gray" align="center">
           Create a sheet or pick one from the list to start filling answers.
         </Text>
       </Flex>
-    )
+    );
   }
 
-  const stats = result
-    ? [
-        { label: 'Correct', value: result.correct, accent: 'var(--accent-10, #0f9d58)' },
-        { label: 'Incorrect', value: result.incorrect, accent: 'var(--red-10, #d93025)' },
-        { label: 'No answer', value: result.noAnswer, accent: 'var(--gray-11, #6b7280)' },
-      ]
-    : []
-
   return (
-    <Flex direction="column" gap="5">
-      <Flex justify="between" align="center" wrap="wrap" gap="3">
-        <Box>
-          <Heading as="h2" size="5">
-            {sheet.name}
-          </Heading>
-          <Text size="2" color="gray">
-            {sheet.questionCount} questions • {sheet.choiceCount} choices each
-          </Text>
-        </Box>
-        <Flex gap="2" className="mode-toggle">
-          {(Object.keys(modeLabels) as SheetMode[]).map((key) => (
-            <Button key={key} variant={mode === key ? 'solid' : 'soft'} onClick={() => onModeChange(key)}>
-              {modeLabels[key]}
-            </Button>
-          ))}
-        </Flex>
-      </Flex>
-
-      <Flex direction="column" gap="3">
-        {sheet.answers.map((entry, index) => {
-          const activeValue = mode === 'answer' ? entry.ua : entry.aa
-          const badgeColor = activeValue !== null ? (mode === 'answer' ? 'grass' : 'iris') : 'gray'
-          const badgeLabel =
-            mode === 'answer'
-              ? activeValue !== null
-                ? `Selected ${activeValue}`
-                : 'No answer'
-              : activeValue !== null
-                ? `Answer ${activeValue}`
-                : 'No key'
-
-          return (
-            <Card key={`${sheet.id}-${index}`} className="question-card">
-              <Flex justify="between" align="center">
-                <Text weight="medium">Question {index + 1}</Text>
-                <Badge variant="soft" color={badgeColor}>
-                  {badgeLabel}
-                </Badge>
+    <Flex direction="column" gap="4" className="sheet-content">
+      <Box className="sheet-header">
+        <Flex justify="between" align="center" wrap="wrap" gap="2">
+          <Box>
+            <Heading as="h2" size="3">
+              {sheet.name}
+            </Heading>
+            <Text size="1" color="gray">
+              {sheet.questionCount} questions • {sheet.choiceCount} choices each
+            </Text>
+          </Box>
+          <Flex align="center" gap="2" wrap="wrap">
+            <Card variant="surface" className="mode-toggle-card">
+              <Flex gap="2" align="center">
+                <Text size="2" color="gray">
+                  Switch to
+                </Text>
+                <Text size="2" weight="medium">
+                  {mode === "answer" ? "Answer key" : "Answer mode"}
+                </Text>
+                <Flex className="toggle-wrapper">
+                  <Switch
+                    size="3"
+                    checked={mode === "key"}
+                    onCheckedChange={(checked) =>
+                      onModeChange(checked ? "key" : "answer")
+                    }
+                  />
+                </Flex>
               </Flex>
-              <RadioCards.Root
-                columns={{ initial: '2', sm: '3', md: '4' }}
-                value={activeValue !== null ? String(activeValue) : 'none'}
-                onValueChange={(value) => onAnswerChange(index, value)}
-              >
-                <RadioCards.Item value="none">Skip</RadioCards.Item>
+            </Card>
+            {mode === 'review' ? (
+              <Button size="3" color="gray" onClick={onResetReview}>
+                Back to sheet
+              </Button>
+            ) : (
+              <Button size="3" onClick={onCheckAnswers} disabled={!canCheckAnswers}>
+                Check answers
+              </Button>
+            )}
+          </Flex>
+        </Flex>
+      </Box>
+
+      <div className="question-grid">
+        {sheet.answers.map((entry, index) => {
+          const isReviewMode = !!result && mode === 'review'
+          const activeValue = mode === 'key' ? entry.aa : entry.ua
+          const userValue = entry.ua
+          const correctValue = entry.aa
+          return (
+            <div key={`${sheet.id}-${index}`} className="question-row">
+              <Text weight="medium" size="3">
+                #{index + 1}
+              </Text>
+              <div className="choice-grid">
                 {Array.from({ length: sheet.choiceCount }, (_, choiceIndex) => {
                   const choiceValue = choiceIndex + 1
+                  const isActive = activeValue === choiceValue
+                  const isUserChoice = userValue === choiceValue
+                  const isCorrectChoice = isReviewMode && correctValue === choiceValue
+                  const isWrongUser = isReviewMode && isUserChoice && userValue !== correctValue
+
+                  let state: ChoiceTone = 'default'
+                  if (isReviewMode) {
+                    if (isWrongUser) state = 'wrong'
+                    else if (isCorrectChoice) state = 'correct'
+                    else if (isUserChoice) state = 'user'
+                  } else if (mode === 'key' && isActive) {
+                    state = 'key'
+                  } else if (isActive) {
+                    state = 'active'
+                  }
+
+                  const handleClick = () => {
+                    if (isReviewMode) return
+                    onAnswerChange(index, isActive ? 'none' : String(choiceValue))
+                  }
+
                   return (
-                    <RadioCards.Item key={choiceValue} value={String(choiceValue)}>
-                      Choice {choiceValue}
-                    </RadioCards.Item>
+                    <ChoiceButton key={choiceValue} state={state} onClick={handleClick} disabled={isReviewMode}>
+                      {choiceValue}
+                    </ChoiceButton>
                   )
                 })}
-              </RadioCards.Root>
-            </Card>
-          )
+              </div>
+            </div>
+          );
         })}
-      </Flex>
+      </div>
 
       <Separator size="4" />
 
-      <Flex direction="column" gap="3">
-        <Flex align="center" gap="3" wrap="wrap">
-          <Button size="3" onClick={onCheckAnswers}>
-            Check answers
-          </Button>
-          <Text size="2" color="gray">
-            We compare the attempt sheet with the answer key to compute stats.
-          </Text>
-        </Flex>
-
-        {errorMessage && (
-          <Callout.Root color="ruby">
-            <Callout.Text>{errorMessage}</Callout.Text>
-          </Callout.Root>
-        )}
-
-        {result ? (
-          <Flex gap="3" wrap="wrap">
-            {stats.map((stat) => (
-              <Card key={stat.label} className="stat-card" style={{ borderColor: stat.accent }}>
-                <Text size="2" color="gray">
-                  {stat.label}
-                </Text>
-                <Heading size="6">{stat.value}</Heading>
-              </Card>
-            ))}
-            <Card className="stat-card">
-              <Text size="2" color="gray">
-                Total
-              </Text>
-              <Heading size="6">{result.total}</Heading>
-            </Card>
-          </Flex>
-        ) : (
-          <Text size="2" color="gray">
-            Run a check to see how many answers are correct, incorrect, or blank.
-          </Text>
-        )}
-      </Flex>
+      <Summary
+        result={result}
+        stats={stats}
+        multipliers={multipliers}
+        resolvedMultipliers={resolvedMultipliers}
+        onMultiplierChange={handleMultiplierChange}
+        totalScore={totalScore}
+        errorMessage={errorMessage}
+      />
     </Flex>
-  )
+  );
 }
+
+type ChoiceTone = 'default' | 'active' | 'user' | 'correct' | 'wrong' | 'key'
+
+const choiceColors: Record<ChoiceTone, { bg: string; color: string; border: string }> = {
+  default: { bg: '#fff', color: '#1f2937', border: 'var(--gray-a5, rgba(15, 23, 42, 0.12))' },
+  active: {
+    bg: 'var(--accent-9, #5845df)',
+    color: 'var(--accent-contrast, #fff)',
+    border: 'var(--accent-9, #5845df)',
+  },
+  user: { bg: 'var(--indigo-8)', color: '#fff', border: 'var(--indigo-8)' },
+  correct: { bg: 'var(--green-9)', color: '#fff', border: 'var(--green-9)' },
+  wrong: { bg: 'var(--red-9)', color: '#fff', border: 'var(--red-9)' },
+  key: { bg: 'var(--indigo-9)', color: '#fff', border: 'var(--indigo-9)' },
+}
+
+const ChoiceButton = styled.button<{ state: ChoiceTone }>`
+  min-width: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid ${({ state }) => choiceColors[state].border};
+  background: ${({ state }) => choiceColors[state].bg};
+  color: ${({ state }) => choiceColors[state].color};
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease,
+    transform 160ms ease;
+  padding: 0.35rem 0.75rem;
+  font-size: 1rem;
+
+  &:hover {
+    transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(-1px)')};
+  }
+`

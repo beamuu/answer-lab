@@ -48,17 +48,17 @@ export function SheetCreator({ onCreate }: SheetCreatorProps) {
     <Box asChild>
       <form onSubmit={handleSubmit} className="sheet-form">
         <Box>
-          <Heading as="h2" size="4">
+          <Heading as="h2" size="8">
             Create sheet
           </Heading>
-          <Text size="2" color="gray">
+          <Text size="2" color="gray" style={{ marginTop: 4 }}>
             Name it, pick the number of questions, set how many choices each question has, and you are
             ready to go.
           </Text>
         </Box>
 
         <label>
-          <Text size="2" weight="medium">
+          <Text size="3" weight="medium">
             Sheet name
           </Text>
           <TextField.Root
@@ -68,9 +68,9 @@ export function SheetCreator({ onCreate }: SheetCreatorProps) {
           />
         </label>
 
-        <Flex gap="3" wrap="wrap">
+        <Flex gap="2" wrap="wrap">
           <label className="input-stack">
-            <Text size="2" weight="medium">
+            <Text size="3" weight="medium">
               Questions
             </Text>
             <TextField.Root
@@ -81,7 +81,7 @@ export function SheetCreator({ onCreate }: SheetCreatorProps) {
             />
           </label>
           <label className="input-stack">
-            <Text size="2" weight="medium">
+            <Text size="3" weight="medium">
               Choices
             </Text>
             <TextField.Root
