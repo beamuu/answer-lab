@@ -10,6 +10,7 @@ import { useSheets } from './hooks/useSheets'
 import type { ResultSummary, SheetMode, SheetPayload, Sheet } from './types/sheets'
 import { Navbar } from './components/Navbar'
 import { Container } from './components/Container'
+import { radixThemeConfig } from './lib/themeConfig'
 
 function App() {
   const { sheets, setSheets } = useSheets()
@@ -128,7 +129,7 @@ const canCheckAnswers = selectedSheet ? selectedSheet.answers.every((answer) => 
   }
 
   return (
-    <Theme accentColor="grass" grayColor="sand" radius="large" scaling="100%">
+    <Theme {...radixThemeConfig}>
       <div className="app-shell">
         <Navbar />
         <Container>
